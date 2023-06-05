@@ -1,0 +1,4 @@
+questionary==1.10.0
+matplotlib==3.6.2
+lmfit==1.1.0
+numpy==1.23.5
