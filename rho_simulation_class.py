@@ -1,10 +1,10 @@
-import ellipsometry_ver2 as elli
+import rho_simulation_functions as elli
 import matplotlib.pyplot as plt
 import numpy as np
-import riProfiles
+import ri_models
 import json
 
-with open("refractiveIndexList.json", 'r') as refractive_index_list:
+with open("substrate_list.json", 'r') as refractive_index_list:
     refractive_index_list = json.load(refractive_index_list)
 
 name_of_substrates_list = refractive_index_list.keys()
@@ -92,7 +92,7 @@ class Simulation:
         axs.errorbar(self.angles, imag_rho, yerr=error.imag, fmt = "none",errorevery=(1,10),ecolor=imag_line.get_color())
         real_line, = axs.plot(self.angles, real_rho, label=r"$\mathrm{Re}(\rho-\rho_0)$", linewidth=2)
         axs.errorbar(self.angles, real_rho, yerr=error.real, fmt = "none",errorevery=(5,10),ecolor=real_line.get_color())
-z
+
 
         if name_of_comparison == "none":
             pass
@@ -200,7 +200,7 @@ z
 
 
     def ri_profile(self):
-        function_to_call = getattr(riProfiles, self.ri_model)
+        function_to_call = getattr(ri_models, self.ri_model)
         z,n_f = function_to_call(**self.params)
         return z, n_f
 

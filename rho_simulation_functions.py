@@ -1,5 +1,5 @@
 import numpy as np
-import riProfiles
+import ri_models
 from functools import reduce
 
 pi = np.pi
@@ -19,10 +19,9 @@ rad2deg = np.rad2deg
 
 def get_rho_from_model(model,angle_in_degrees,wavelength,n_i,n_t,**params):
 
-    model_to_use = getattr(riProfiles,model)
+    model_to_use = getattr(ri_models,model)
     z_profile,n_profile = model_to_use(**params)
     e_profile = n_profile**2
-#   n_slab_array = get_slab_array(n_profile)
     e_slab_array = get_slab_array(e_profile)
     n_slab_array = sqrt(e_slab_array)
     dz_array = get_difference_array(z_profile)
