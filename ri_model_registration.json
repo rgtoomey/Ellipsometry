@@ -1,22 +1,22 @@
 {
   "Perfect interface" :
-        { "function name": "rho_interface",
-          "number of other parameters": 0,
-          "names of other parameters": [],
-          "questions to get values for other parameters": []
+        { "ri model": "interface",
+          "number of parameters": 0,
+          "names of parameters": []
         },
   "Single layer":
-        { "function name": "rho_single_layer",
-          "number of other parameters": 2,
-          "names of other parameters": ["n_average", "thickness"],
-          "questions to get values for other parameters": [ "Refractive Index? ",
-                          "Thickness (nm)? "]
+        { "ri model": "single",
+          "number of parameters": 2,
+          "names of parameters": ["n_avg", "width"]
+        },
+  "Linear profile":
+        { "ri model": "linear_profile",
+          "number of parameters": 3,
+          "names of parameters": ["n_avg", "width", "dn"]
         },
   "Tanh profile":
-        { "function name": "rho_tanh_profile",
-          "number of other parameters": 4 ,
-          "names of other parameters": ["n_average", "thickness", "dn", "sigma"],
-          "questions to get values for other parameters": [ "Refractive Index? ",
-                          "Interface width (nm)? ","dn? ","sigma? "]
+        { "ri model": "tanh_profile",
+          "number of parameters": 4 ,
+          "names of parameters": ["n_avg", "width", "dn", "sigma"]
         }
 }
