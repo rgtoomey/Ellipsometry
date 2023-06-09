@@ -412,7 +412,7 @@ class Simulation:
 
         return print("Done!")
 
-
+#function to compare simulation objects
 def plot(labels, simulation_objects, plot_title = "none", comparison = "none", confidence_bars = "no"):
 
     print(len(labels))

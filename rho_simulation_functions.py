@@ -175,3 +175,9 @@ def rho_to_imag(rho):
 def rho_to_real(rho):
     return np.real(rho)
 
+def psi_delta_to_rho(psi_in_degrees, delta_in_degrees):
+
+    psi = to_angle_in_radians(psi_in_degrees)
+    delta = to_angle_in_radians(delta_in_degrees)
+    rho = tan(psi)*cos(delta)+complex(0,1)*tan(psi)*sin(delta)
+    return rho
