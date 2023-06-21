@@ -1,5 +1,7 @@
 import numpy as np
+import numpy.fft as fft
 import matplotlib.pyplot as plt
+import pandas
 
 cos = np.cos
 sin = np.sin
@@ -24,4 +26,18 @@ def intensity(A_deg,P_deg,psi_deg,delta_deg):
     out = a0+a2c*cos(2*C)+a2s*sin(2*C)+a4c*cos(4*C)+a4s*sin(4*C)
     plt.plot(abs(C_degrees),out)
     plt.show()
-    return
+    return out
+
+def get_fourier(data)
+
+    out = fft(data)
+
+    dc = out[0]
+    c2 = out[2].real
+    c4 = out[4].real
+    s2 = out[2].imag
+    s4 = out[4].imag
+
+    return dc,c2,c4,s2,s4
+
+def get_
