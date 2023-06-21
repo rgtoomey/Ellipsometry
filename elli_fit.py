@@ -2,7 +2,6 @@ import rho_simulation_functions as elli
 import rho_smear as smear
 import json
 
-
 with open("substrate_list.json", 'r') as refractive_index_list:
     refractive_index_list = json.load(refractive_index_list)
 
