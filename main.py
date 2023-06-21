@@ -6,7 +6,7 @@ import rho_simulation_class as sim
 import matplotlib.pyplot as plt
 import csv
 
-filename= "silicon_modified.txt"
+filename= "Insert Here"
 substrate = "silicon"
 
 file = open('data/'+filename)
