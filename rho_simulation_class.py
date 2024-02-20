@@ -4,18 +4,14 @@ import numpy as np
 import ri_models
 import json
 
-with open("substrate_list.json", 'r') as refractive_index_list:
-    refractive_index_list = json.load(refractive_index_list)
-
-name_of_substrates_list = refractive_index_list.keys()
-
 class Simulation:
 
-    def __init__(self,ri_model,n_i,substrate,**params):
+    def __init__(self, ri_model, n_i, substrate, **all_params):
         self.ri_model = ri_model
         self.substrate = substrate
         self.n_i = n_i
-        self.params = params
+        self.all_params = all_params
+        self.ri_params = elli.get_ri_params(self.ri_model, self.all_params)
         self.angles = [*range(1,91,1)]
         self.angles[-1] = 89.999
         self.wavelength = 632.8
@@ -27,12 +23,12 @@ class Simulation:
         print("Refractive Index Profile: " + self.ri_model)
         print(self.wavelength)
         print(self.substrate)
-        print(self.params)
-        pass
+        print(self.all_params)
 
 
     def reset(self):
-        pass
+        self.angles = [*range(1,91,1)]
+        self.angles[-1] = 89.999
 
 
     def show_ri_profile(self):
@@ -46,6 +42,94 @@ class Simulation:
         axs.set_ylabel('Refractive Index', size=16)
         axs.tick_params(axis='both', labelsize=12)
         axs.text(0.025, 0.95, plot_title, transform=axs.transAxes, size=12, ha="left")
+        plt.show()
+
+    def compare_to_data(self,angle_data,rho_data,type):
+        self.angles = angle_data
+
+        fig = plt.figure(dpi=300, layout='constrained', figsize=(5, 5))
+        axs = fig.subplots(2, 1)
+
+        if type == "psi_delta":
+            data_1 = elli.rho_to_delta(rho_data)
+            data_2 = elli.rho_to_psi(rho_data)
+            model_1 = self.delta()
+            model_2 = self.psi()
+
+            axs[0].set_ylabel('Delta (deg)', size=16)
+            axs[1].set_ylabel('Psi (deg)', size=16)
+
+            label_data = "Data"
+            label_fit = "Fit"
+
+        elif type == "rho":
+            data_1 = elli.rho_to_real(rho_data)
+            data_2 = elli.rho_to_imag(rho_data)
+
+            rho_model = self.rho(type="coating")
+            model_1 = elli.rho_to_real(rho_model)
+            model_2 = elli.rho_to_imag(rho_data)
+
+            axs[0].set_ylabel(r'$\mathrm{Re}\rho$', size=16)
+            axs[1].set_ylabel(r'$\mathrm{Im}\rho$', size=16)
+
+            label_data = "Data"
+            label_fit = "Fit"
+
+        elif type == "residual":
+
+            rho_model = self.rho(type="coating")
+
+            data_1 = elli.rho_to_real(rho_data) - elli.rho_to_real(rho_model)
+            data_2 = elli.rho_to_imag(rho_data) - elli.rho_to_imag(rho_model)
+
+            model_1 = angle_data*0
+            model_2 = angle_data*0
+
+            axs[0].set_ylabel('Residual, Re', size =16)
+            axs[1].set_ylabel('Residual, Im', size=16)
+
+            label_data = "Residual"
+            label_fit = None
+
+        elif type == "rho_difference":
+            n_t = self.n_transmitted()
+            rho_no_coating = elli.get_rho_from_ri_profile("interface", angle_data, self.wavelength, self.n_i, n_t)
+
+            rho_data_difference = rho_data - rho_no_coating
+
+            data_1 = elli.rho_to_real(rho_data_difference)
+            data_2 = elli.rho_to_imag(rho_data_difference)
+
+            rho_model = self.rho(type="coating")
+
+            model_1 = elli.rho_to_real(rho_model-rho_no_coating)
+            model_2 = elli.rho_to_imag(rho_model-rho_no_coating)
+
+            axs[0].set_ylabel(r'$\mathrm{Re}(\rho-\rho_0)$', size=16)
+            axs[1].set_ylabel(r'$\mathrm{Im}(\rho-\rho_0)$', size=16)
+
+            label_data = "Data"
+            label_fit = "Fit"
+
+
+        self.reset()
+
+        axs[1].set_xlabel('Angle of Incidence (deg)', size=16)
+
+        axs[0].tick_params(axis='both', labelsize=12)
+        axs[1].tick_params(axis='both', labelsize=12)
+
+        axs[0].plot(angle_data,data_1, marker = 'o',fillstyle = 'none', linestyle = 'none',label = label_data)
+        axs[0].plot(angle_data,model_1, color = "black", linewidth=2, label = label_fit)
+
+        axs[1].plot(angle_data,data_2, marker = 'o',fillstyle = 'none', linestyle = 'none',label = label_data)
+        axs[1].plot(angle_data,model_2, color = "black", linewidth=2, label = label_fit)
+
+
+        axs[0].legend()
+        axs[1].legend()
+
         plt.show()
 
 
@@ -116,25 +200,26 @@ class Simulation:
 
 
     def n_transmitted(self,**kwargs):
-
         if "ri_over_ride" in kwargs:
             return kwargs["ri_over_ride"]
         else:
-            return refractive_index_list[self.substrate]
+            return elli.get_n_t(self.substrate)
 
 
     def rho(self,type = "coating",**kwargs):
+
         n_t = self.n_transmitted(**kwargs)
+
         if type == "coating":
-            rho_eval = elli.get_rho_from_model(self.ri_model, self.angles, self.wavelength, self.n_i, n_t, **self.params)
-            return rho_eval
+            coating = elli.get_rho_from_ri_profile(self.ri_model, self.angles, self.wavelength, self.n_i, n_t, **self.all_params)
+            return coating
         elif type == "no_coating":
-            rho_eval = elli.get_rho_from_model("interface", self.angles, self.wavelength, self.n_i, n_t)
-            return rho_eval
+            no_coating = elli.get_rho_from_ri_profile("interface", self.angles, self.wavelength, self.n_i, n_t, **self.all_params)
+            return no_coating
         elif type == "difference":
-            rho_eval = elli.get_rho_from_model(self.ri_model, self.angles, self.wavelength, self.n_i, n_t, **self.params)\
-                       - elli.get_rho_from_model("interface", self.angles, self.wavelength, self.n_i, n_t)
-            return rho_eval
+            coating = elli.get_rho_from_ri_profile(self.ri_model, self.angles, self.wavelength, self.n_i, n_t, **self.all_params)
+            no_coating = elli.get_rho_from_ri_profile("interface", self.angles, self.wavelength, self.n_i, n_t, **self.all_params)
+            return coating - no_coating
 
 
     def psi(self, with_coating = "yes",**kwargs):
@@ -201,7 +286,7 @@ class Simulation:
 
     def ri_profile(self):
         function_to_call = getattr(ri_models, self.ri_model)
-        z,n_f = function_to_call(**self.params)
+        z,n_f = function_to_call(**self.ri_params)
         return z, n_f
 
 
@@ -342,7 +427,7 @@ class Simulation:
         default_angles = self.angles
 
         if param_name != "n_t":
-            default_value = self.params.get(param_name)
+            default_value = self.all_params.get(param_name)
 
         self.angles = [angle]
 
@@ -357,7 +442,7 @@ class Simulation:
         for value in value_array:
 
             if param_name != "n_t":
-                self.params.update({param_name:value})
+                self.all_params.update({param_name:value})
                 d_rho[i] = self.rho(type="difference")
                 if name_of_comparison == "tf":
                     d_rho_analytic[i] = self.d_rho_tf()
@@ -408,7 +493,7 @@ class Simulation:
         self.angles = default_angles
 
         if param_name != "n_t":
-            self.params.update({param_name: default_value})
+            self.all_params.update({param_name: default_value})
 
         return print("Done!")
 

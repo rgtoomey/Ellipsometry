@@ -1,6 +1,8 @@
 import numpy as np
 import ri_models
 from functools import reduce
+import inspect
+import json
 
 pi = np.pi
 exp = np.exp
@@ -15,29 +17,60 @@ sqrt = np.sqrt
 deg2rad = np.deg2rad
 rad2deg = np.rad2deg
 
+#Functions for "ri_models"#
+def get_ri_model_names():
+    function_names = inspect.getmembers(ri_models, inspect.isfunction)
+    return list(dict(function_names).keys())
+
+def get_ri_param_names(ri_model):
+    model = getattr(ri_models,ri_model)
+    keys = list(inspect.signature(model).parameters.keys())
+    return keys
+
+def get_ri_params(ri_model,params):
+    ri_param_names = get_ri_param_names(ri_model)
+    ri_params = {key:params[key] for key in ri_param_names}
+    return ri_params
+
+#Functions for "ri_models"#
+def get_n_t(substrate):
+    with open("substrate_list.json", 'r') as refractive_index_list:
+        refractive_index_list = json.load(refractive_index_list)
+    return refractive_index_list[substrate]
+
 #Ellipsometry rho modeling#
 
-def get_rho_from_model(model,angle_in_degrees,wavelength,n_i,n_t,**params):
+def get_rho_from_ri_profile(ri_model, angle_in_degrees, wavelength, n_i, n_t, **params):
 
-    model_to_use = getattr(ri_models,model)
-    z_profile,n_profile = model_to_use(**params)
-    e_profile = n_profile**2
+    angle_in_degrees = np.array(angle_in_degrees)
+
+    if ri_model not in get_ri_model_names():
+        return print("The refractive index profile model has been incorrectly chosen")
+
+    if 'angle_offset' in params:
+        angle_in_degrees = angle_in_degrees + params['angle_offset']
+
+    ri_params = get_ri_params(ri_model,params)
+
+    angle_in_radians = to_angle_in_radians(angle_in_degrees)
+    num_angles = len(angle_in_radians)
+    iteration = 0
+    rho = np.zeros(num_angles, dtype = np.complex)
+
+    model_to_use = getattr(ri_models, ri_model)
+    z_profile, n_profile = model_to_use(**ri_params)
+    e_profile = n_profile ** 2
     e_slab_array = get_slab_array(e_profile)
     n_slab_array = sqrt(e_slab_array)
     dz_array = get_difference_array(z_profile)
-    n_t_complex=complex(n_t[0], n_t[1])
+    n_t_complex = complex(n_t[0], n_t[1])
 
     packed_n_array = get_packed_n_slab_array(n_i, n_t_complex, n_slab_array)
-    angle_in_radians = to_angle_in_radians(angle_in_degrees)
-    num_angles = len(angle_in_radians)
 
-    rho = np.zeros(num_angles, dtype = np.complex)
-
-    i = 0
     for x in angle_in_radians:
         packed_q_array = get_packed_q_array(x, wavelength, packed_n_array)
-        rho[i] = get_rho(packed_q_array, packed_n_array, dz_array)
-        i += 1
+        rho[iteration] = get_rho(packed_q_array, packed_n_array, dz_array)
+        iteration += 1
 
     tol = 1e-8
     rho.real[abs(rho.real) < tol] = 1e-9
@@ -85,6 +118,59 @@ def get_rho(packed_q_array, packed_n_array, dz_array):
         p_total = p_matrix_transfer[1, 0] / p_matrix_transfer[0, 0]
 
         return p_total / s_total
+
+
+# Fresnel terms to be used in analytic approximations
+
+def fresnel_terms(angle_in_radians, wavelength, n_i, n_t):
+    wn = get_wavenumber(wavelength)
+    k = get_k(angle_in_radians, wn, n_i)
+    small_q_i = get_small_q(k, wn, n_i)
+    big_q_i = get_big_q_from_small_q(small_q_i, n_i)
+    small_q_t = get_small_q(k, wn, n_t)
+    big_q_t = get_big_q_from_small_q(small_q_t, n_t)
+
+    e_i = to_dielectric(n_i)
+    e_t = to_dielectric(n_t)
+
+    rs_0 = get_reflection_interface(small_q_i, small_q_t)
+    rp_0 = get_reflection_interface(big_q_i, big_q_t)
+
+    return e_i, e_t, k, small_q_i, small_q_t, big_q_i, big_q_t, rs_0, rp_0
+
+
+def get_rho_thin_film(angle_in_degrees,wavelength,n_i,n_t,difference,**params):
+
+    angle_in_radians = to_angle_in_radians(angle_in_degrees)
+    n_t_complex = complex(n_t[0], n_t[1])
+
+    excess_1 = params.get("excess_1")
+    excess_2 = params.get("excess_2")
+
+    e_i, e_t, k,small_q_i, small_q_t, big_q_i, big_q_t, rs_0, rp_0 = fresnel_terms(angle_in_radians, wavelength, n_i, n_t_complex)
+
+    k_prime = k ** 2 / (e_i * e_t)
+
+    big_q_sum = (big_q_i + big_q_t)
+    pf_1_prime = 2 * big_q_i * k_prime / big_q_sum ** 2
+    pf_2_prime = 2 * big_q_i * k_prime ** 2 / big_q_sum ** 3
+    pf_3_prime = 4 * big_q_i * big_q_t * k_prime / big_q_sum ** 2
+
+    pf_i_1 = pf_1_prime / rs_0
+    pf_r_1 = pf_2_prime / rs_0
+    pf_r_2 = pf_3_prime / rs_0
+
+    d_imag_1 = - pf_i_1 * excess_1
+
+    d_real_1 = -pf_r_1 * excess_1 ** 2
+    d_real_2 = pf_r_2 * excess_2
+    d_rho = complex(0, 1) * d_imag_1 + d_real_1 + d_real_2
+
+    if difference == "yes":
+        return d_rho
+    if difference == 'no':
+        return d_rho+rp_0/rs_0
+
 
 #auxiliary functions#
 

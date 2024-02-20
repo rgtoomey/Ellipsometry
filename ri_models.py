@@ -15,6 +15,7 @@ def linear_profile(n_avg,width,dn):
         n_profile = n_avg + dn * z_modified
         return z_profile,n_profile
 
+
 def tanh_profile(n_avg,width,dn,sigma):
     if width == 0:
         z_profile = np.array([])
@@ -29,14 +30,45 @@ def tanh_profile(n_avg,width,dn,sigma):
     return z_profile, n_profile
 
 
-def single(n_avg, width):
+def single_layer(n_avg, width):
     z_profile = np.array([0,width],dtype=float)
     n_profile = np.copy(z_profile)
     n_profile[0] = n_avg
     n_profile[1] = n_avg
     return z_profile,n_profile
 
-def single_weak(n_avg, width):
+
+def two_layer(n_avg_1, width_1, n_avg_2, width_2):
+    interface_width = 0.001
+    z_profile = np.array([0,width_1,width_1+interface_width,width_1+width_2],dtype=float)
+    n_profile = np.copy(z_profile)
+    n_profile[0] = n_avg_1
+    n_profile[1] = n_avg_1
+    n_profile[2] = n_avg_2
+    n_profile[3] = n_avg_2
+    return z_profile,n_profile
+
+
+def three_layer(n_avg_1, width_1, n_avg_2, width_2, n_avg_3, width_3):
+    sigma = 0.001
+
+    b_1 = width_1
+    b_2 = b_1 + width_2
+    b_3 = b_2 + width_3
+
+    z_profile = np.array([0,b_1,b_1+sigma,b_2,b_2+sigma,b_3],dtype=float)
+    n_profile = np.copy(z_profile)
+    n_profile[0] = n_avg_1
+    n_profile[1] = n_avg_1
+    n_profile[2] = n_avg_2
+    n_profile[3] = n_avg_2
+    n_profile[4] = n_avg_3
+    n_profile[5] = n_avg_3
+
+    return z_profile,n_profile
+
+
+def single_layer_weak(n_avg, width):
     if width == 0:
         z_profile = np.array([])
         n_profile = np.array([])
@@ -49,17 +81,8 @@ def single_weak(n_avg, width):
         n_profile = np.full(num_pts, n_avg)
         return z_profile,n_profile
 
-def double(n_avg_1,width_1,n_avg_2,width_2):
-    interface_width = 0.001
-    z_profile = np.array([0,width_1,width_1+interface_width,width_1+width_2],dtype=float)
-    n_profile = np.copy(z_profile)
-    n_profile[0] = n_avg_1
-    n_profile[1] = n_avg_1
-    n_profile[2] = n_avg_2
-    n_profile[3] = n_avg_2
-    return z_profile,n_profile
 
-def double_weak(n_avg_1,width_1,n_avg_2,width_2):
+def two_layer_weak(n_avg_1,width_1,n_avg_2,width_2):
 
     dz = 0.1
     num_pts_1 = int(np.ceil(width_1 / dz) + 1)
@@ -77,16 +100,6 @@ def double_weak(n_avg_1,width_1,n_avg_2,width_2):
     n_profile = np.append(n_profile_1,n_profile_2)
 
     return z_profile, n_profile
-
-
-
-    z_profile = np.array([0,width_1,width_1+interface_width,width_1+width_2],dtype=float)
-    n_profile = np.copy(z_profile)
-    n_profile[0] = n_avg_1
-    n_profile[1] = n_avg_1
-    n_profile[2] = n_avg_2
-    n_profile[3] = n_avg_2
-    return z_profile,n_profile
 
 
 def interface():

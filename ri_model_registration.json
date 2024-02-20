@@ -4,10 +4,20 @@
           "number of parameters": 0,
           "names of parameters": []
         },
-  "Single layer":
-        { "ri model": "single",
+  "Single film":
+        { "ri model": "single_film",
           "number of parameters": 2,
           "names of parameters": ["n_avg", "width"]
+        },
+  "Two film":
+        { "ri model": "two_film",
+          "number of parameters": 4,
+          "names of parameters": ["n_avg_1", "width_1", "n_avg_2", "width_2"]
+        },
+  "Three film":
+        { "ri model": "three_film",
+          "number of parameters": 6,
+          "names of parameters": ["n_avg_1", "width_1", "n_avg_2", "width_2", "n_avg_3", "n_avg_4"]
         },
   "Linear profile":
         { "ri model": "linear_profile",

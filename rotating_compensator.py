@@ -7,10 +7,10 @@ cos = np.cos
 sin = np.sin
 pi = np.pi
 
-def intensity(A_deg,P_deg,psi_deg,delta_deg):
+def intensity(A_deg,P_deg,psi_deg,delta_deg,c_offset=0):
 
     pr = pi/2
-    C_degrees = np.arange(0,360,.01)
+    C_degrees = np.arange(0,360,.01)+c_offset
     C = np.deg2rad(C_degrees)
 
     A,P,psi,delta = [np.deg2rad(i) for i in [A_deg,P_deg,psi_deg, delta_deg]]
@@ -26,9 +26,9 @@ def intensity(A_deg,P_deg,psi_deg,delta_deg):
     out = a0+a2c*cos(2*C)+a2s*sin(2*C)+a4c*cos(4*C)+a4s*sin(4*C)
     plt.plot(abs(C_degrees),out)
     plt.show()
-    return out
+    return
 
-def get_fourier(data)
+def get_fourier(data):
 
     out = fft(data)
 
@@ -39,5 +39,3 @@ def get_fourier(data)
     s4 = out[4].imag
 
     return dc,c2,c4,s2,s4
-
-def get_

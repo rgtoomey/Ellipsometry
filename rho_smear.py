@@ -1,5 +1,5 @@
 import rho_simulation_functions as elli
-import elli_fit as fit
+import elli_fit_functions as fit
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 from scipy.interpolate import make_interp_spline
